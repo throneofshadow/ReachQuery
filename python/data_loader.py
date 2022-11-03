@@ -2,7 +2,7 @@ import pandas as pd
 import cv2
 import numpy as np
 import os
-from visualizations import SingleReachViz
+from python.visualizations import SingleReachViz
 
 
 def import_file(path_to_csv, use_index=False):
@@ -19,7 +19,11 @@ class BlockQuery:
         self.date = date
         self.session = session
         self.query_types = query_list
-        self.load_data_from_main_path()
+        try:
+            self.load_data_from_main_path()
+            print('We have loaded your data. ')
+        except:
+            print('No data found, returning to main program. ')
 
     def load_data_from_main_path(self):
         self.load_path = self.dir_path + '\\' + self.rat + '\\' + self.date + '\\' + self.session + '\\'
