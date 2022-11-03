@@ -1,8 +1,10 @@
 from python.data_loader import BlockQuery as Query
 
+
 class ToQuery:
     """ Start simple, we want to input using a string the main path, the rat, the date, and the session.
         Outputs should be """
+
     def __init__(self):
         self.rat_name, self.rat_date, self.rat_session = None, None, None
         self.get_manual_information()
@@ -17,7 +19,8 @@ class ToQuery:
             print('Unable to process data for your variable combinations. Please use valid entries. ')
 
     def get_manual_information(self):
-        print('Welcome to ReachQuery V1.0. To change the data directory from your current working directory, please enter 0.')
+        print(
+            'Welcome to ReachQuery V1.0. To change the data directory from your current working directory, please enter 0.')
         iid = input()
         if iid == 0:
             print('Please enter working directory. ')
