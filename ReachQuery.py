@@ -8,7 +8,8 @@ class ToQuery:
         rat = 'RM16'
         date = '09202019'
         session = 'S2'
-        Query(dir_path, rat, date, session)
+        query_types = [False, False, False]
+        Query(dir_path, rat, date, session, query_types)
 
 
 ToQuery()
