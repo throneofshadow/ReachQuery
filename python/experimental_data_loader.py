@@ -6,8 +6,9 @@ import matplotlib.pyplot as plt
 import matplotlib
 matplotlib.use('tkAgg')
 
+
 def get_licks_sensor(licking_times):
-    lick_threshold = 1.0
+    lick_threshold = 2.0  # in seconds
     rewards = 0
     bouts = 0
     r_c = 0
@@ -15,7 +16,7 @@ def get_licks_sensor(licking_times):
     # Can make 1-D mask for licking (optional)
     for i, licks in enumerate(licking_times):
         if i < len(licking_times)-1:
-            if licking_times[i+1] - licks > lick_threshold:  # If no more licking in next 0.5s
+            if licking_times[i+1] - licks > lick_threshold:  # If no more licking in next 2.0 s
                 if r_c > 5 and b_c:
                     rewards += 1
                     bouts += 1
@@ -24,7 +25,7 @@ def get_licks_sensor(licking_times):
                 r_c = 0
                 b_c = 0
             else:
-                if r_c > 10:
+                if r_c > 20:
                     b_c = True
                     r_c += 1
                 else:
@@ -49,47 +50,43 @@ edf_15['rat'] = '15'
 edf_16 = pd.read_pickle('data/RM16_expdf.pickle')
 edf_16['rat'] = '16'
 edf = pd.concat([edf_9, edf_10, edf_11, edf_12, edf_13, edf_14, edf_15, edf_16])
-reward_dict = {}
 # Column key: 'S' is session, 'dim', 'Date', 'r_start', pos = ['xp', 'yp', 'zp'], 'lick'
 # Iterate over unique rat, date, session combinations
-c_head = ['Rat', 'Date', 'Session', 'Dim', 'Rew', 'Bout', 'N_Interactions']
+c_head = ['Rat', 'Date', 'Session', 'Dim', 'Rew', 'Bout', 'N_Interactions', 'N_Successful']
 plot_df = []
-fig, (ax, ax1, ax2) = plt.subplots(3)
 for index, content in edf.iterrows():
     rat = content['rat']
     date = content['Date']
-    date = int(date[4:6])
+    if '25' in date:
+        date = 25
+    elif '26' in date:
+        date = 26
+    elif '27' in date:
+        date = 27
+    elif '28' in date:
+        date = 28
+    elif '17' in date:
+        date=17
+    elif '18' in date:
+        date = 18
+    elif '19' in date:
+        date = 19
+    else:
+        date = 20
     dim = content['dim']
     if 'pidiv' in dim:
         dim = 3
     else:
         dim = 0
     session = content['S']
+    n_succ = content['SF'].shape[0]
     num_interactions = len(content['r_start'])  # Get # of trials
     reward_nums, bout_nums = get_licks_sensor(content['lick'])
-    if rat == '9':
-        cc = 'b'
-    if rat == '10':
-        cc = 'g'
-    if rat == '11':
-        cc = 'r'
-    if rat == '12':
-        cc = 'lime'
-    if rat == '13':
-        cc = 'k'
-    if rat == '14':
-        cc = 'm'
-    if rat == '15':
-        cc = 'dodgerblue'
-    if rat == '16':
-        cc = 'y'
-    ax.scatter(date, reward_nums, c=cc)
-    ax1.scatter(date, bout_nums, c=cc)
-    ax2.scatter(date, num_interactions, c=cc)
-    pdf = pd.Series([rat, date, session, dim, reward_nums, bout_nums, num_interactions])
+    pdf = pd.Series([rat, date, session, dim, reward_nums, bout_nums, num_interactions, n_succ])
     plot_df.append(pdf)
 pxd = pd.DataFrame(plot_df)
 pxd.columns = c_head
+pxd.to_csv('metadata_values.csv', index=False)
 pdb.set_trace()
 
 # Plots: Color scatters by rat, X-axis is date, Y-axis is Rew, Bout, N-Behaviors
