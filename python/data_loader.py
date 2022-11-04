@@ -94,7 +94,7 @@ class BlockQuery:
         """
         self.lp = self.load_path + '\\classification_videos\\trial_videos\\__' + str(idd)
         #self.read_images_to_array_opencv(bound_lower, bound_upper, idd)
-        self.single_reach_query_data = self.data[bound_lower:bound_upper]  # Shape Time X Variables
+        self.single_reach_query_data = self.data[bound_lower-20:bound_upper+20]  # Shape Time X Variables
         # Get analysis variables here
         SingleReachAnalysis(self.single_reach_query_data, self.hand, self.lp)
         SingleReachViz(self.single_reach_query_data, self.hand, self.lp)  # Create single-reach visualizations
