@@ -1,8 +1,11 @@
+import pdb
+
 import pandas as pd
 import cv2
 import numpy as np
 import os
-from visualizations import SingleReachViz
+from python.visualizations import SingleReachViz
+from python.analysis import SingleReachAnalysis
 
 
 def import_file(path_to_csv, use_index=False):
@@ -14,12 +17,17 @@ class BlockQuery:
         self.cap, self.data, self.prediction_file = None, None, None
         self.single_reach_video_images, self.single_reach_query_data, self.single_reach_query_predictions = None, None, None
         self.load_path, self.fps, self.video_width, self.video_height, self.fps = None, None, None, None, fps
+        self.hand = None
         self.dir_path = dir_path
         self.rat = rat
         self.date = date
         self.session = session
         self.query_types = query_list
-        self.load_data_from_main_path()
+        try:
+            self.load_data_from_main_path()
+            print('We have loaded your data. ')
+        except:
+            print('No data loaded, returning to main program. ')
 
     def load_data_from_main_path(self):
         self.load_path = self.dir_path + '\\' + self.rat + '\\' + self.date + '\\' + self.session + '\\'
@@ -30,29 +38,35 @@ class BlockQuery:
         for file in os.listdir(video_dir):
             if file.endswith('.mp4') and 'LabLabel' in file:
                 self.cap = cv2.VideoCapture('classification_videos\\' + file)
-                self.video_width = self.cap.get(cv2.CAP_PROP_FRAME_WIDTH)
-                self.video_height = self.cap.get(cv2.CAP_PROP_FRAME_HEIGHT)
+                self.video_width = int(self.cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+                self.video_height = int(self.cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
             if file.endswith('.csv'):
                 self.prediction_file = import_file('classification_videos\\' + file)
         os.chdir(current_path)  # Set path back
         self.data = import_file(data_path)
+        self.query_over_block()
 
-    def query_over_block(self, hand_query=False, grasp_query=False, tug_query=False):
+    def query_over_block(self):
         row_ = 0
         for row in self.prediction_file.iterrows():
             if row[1][1] > 0:
-                lb = row[1][1]
-                ub = row[1][2]
+                lb = int(row[1][1])
+                ub = int(row[1][2])
                 grasps = row[1][3]
                 ind_grasps = grasps.split(',')
                 num_grasps = len(ind_grasps)
                 hand = row[1][4]
+                self.hand = hand
                 if 'l' or 'L' in hand:
                     hand = 1
                 else:
                     hand = 0
                 tug = row[1][5]
                 notes = row[1][6]
+                if notes != 0:
+                    continue
+                else:
+                    notes = None
                 row_ += 1
                 if notes:
                     break
@@ -66,9 +80,10 @@ class BlockQuery:
                     self.load_data_from_boundaries(lb, ub, row_)
                 else:  # Empty query, just load individual reaches
                     self.load_data_from_boundaries(lb, ub, row_)
+                    pdb.set_trace()
                     # Do things here (plot data, save a cut video into a directory named reaches)
 
-    def load_data_from_boundaries(self, bound_lower, bound_upper, idd, save_video=True):
+    def load_data_from_boundaries(self, bound_lower, bound_upper, idd):
         """ Function to load reaching video data (.mp4) from reaching videos. This function requires an upper and
             lower bound, in frame numbers eg. 34567.
             Inputs
@@ -77,30 +92,22 @@ class BlockQuery:
             bound_upper: int, upper bound to extract images from video stack
 
         """
-        self.single_reach_video_images = self.read_images_to_array_opencv(bound_lower, bound_upper)
-        if save_video:
-            self.cut_reaching_video(idd)
-        self.single_reach_query_data = self.data[bound_lower, bound_upper]
+        self.lp = self.load_path + '\\classification_videos\\trial_videos\\__' + str(idd)
+        #self.read_images_to_array_opencv(bound_lower, bound_upper, idd)
+        self.single_reach_query_data = self.data[bound_lower-20:bound_upper+20]  # Shape Time X Variables
+        # Get analysis variables here
+        SingleReachAnalysis(self.single_reach_query_data, self.hand, self.lp)
+        SingleReachViz(self.single_reach_query_data, self.hand, self.lp)  # Create single-reach visualizations
 
-        SingleReachViz(self.single_reach_query_data)  # Create single-reach visualizations
+    def read_images_to_array_opencv(self, bound_lower, bound_upper, reach_number, fps=10):
 
-    def read_images_to_array_opencv(self, bound_lower, bound_upper):
-        images = []
-        ret = True
-        self.cap.set(bound_lower, bound_upper)
-        while ret:
-            ret, img = self.cap.read()
-            if ret:
-                images.append(img)
-        return np.stack(images, axis=0)
-
-    def cut_reaching_video(self, reach_number, fps):
-        if not os.path.exists(self.load_path + '\\classification_videos\\trial_videos'):
-            os.makedirs(self.load_path + '\\classification_videos\\trial_videos')
-        out = cv2.VideoWriter('reach_' + str(reach_number) + 'video.mp4', cv2.VideoWriter_fourcc(*'mp4v'), fps,
-                              (self.video_width, self.video_height), False)
-        for i in range(self.single_reach_video_images.shape[0]):
-            out.write(self.single_reach_video_images[i, :, :])  # Write numpy data to video.
+        if not os.path.exists(self.lp):
+            os.makedirs(self.lp)
+        irange = np.arange(bound_lower, bound_upper, 1)
+        out = cv2.VideoWriter(self.lp + '\\reach_' + str(reach_number) + 'video.mp4', cv2.VideoWriter_fourcc(*'mp4v'),
+                              fps, (self.video_width, self.video_height))
+        for i in irange:
+            out.write(self.cap.read(int(i))[1])
         out.release()
 
     def find_peak_time(self):

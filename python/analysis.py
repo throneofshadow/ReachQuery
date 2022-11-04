@@ -1,7 +1,7 @@
 class SingleReachAnalysis:
-    def __init__(self, dataframe):
+    def __init__(self, dataframe, hand, path_to_save):
         self.dataframe = dataframe
-
+        self.hand = hand
     def do_PCA(self):
         """ Function to perform PCA (Principal Components Analysis) on a single time-series of a reach. """
     def do_DCA(self):
