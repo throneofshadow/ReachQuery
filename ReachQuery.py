@@ -5,9 +5,10 @@ class ToQuery:
     """ Start simple, we want to input using a string the main path, the rat, the date, and the session.
         Outputs should be """
 
-    def __init__(self):
+    def __init__(self,verbose=False):
         self.rat_name, self.rat_date, self.rat_session = None, None, None
-        self.get_manual_information()
+        if verbose:
+            self.get_manual_information()
         self.dir_path = 'C:\\Users\\bassp\\OneDrive\\Desktop\\Classification Project\\ReachProcess'
         self.rat_name = 'RM16'
         self.rat_date = '09202019'
